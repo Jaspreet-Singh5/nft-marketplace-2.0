@@ -19,7 +19,7 @@ contract NFT is ERC721URIStorage {
     /// @param user The address that will receive the minted NFT
     /// @param tokenURI The metadata URI for the NFT
     /// @return uint256 The ID of the newly minted token
-    function awardItem(address user, string memory tokenURI) public returns (uint256) {
+    function createNft(address user, string memory tokenURI) public returns (uint256) {
         uint256 tokenId = _nextTokenId++; // Get current token ID and increment
         _mint(user, tokenId); // Mint the NFT to the user
         _setTokenURI(tokenId, tokenURI); // Set the token's metadata URI
