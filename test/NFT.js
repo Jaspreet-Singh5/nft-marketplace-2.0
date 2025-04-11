@@ -2,7 +2,7 @@ const chai = require('chai');
 const { expect } = chai;
 const { ethers } = require('hardhat');
 
-describe('Award an Item', () => {
+describe('Create NFT', () => {
     let nft,
         user1,
         user2,
@@ -23,7 +23,7 @@ describe('Award an Item', () => {
 
     it('should award an item to a user', async () => {
         // award an item to the user
-        tx = await nft.awardItem(user1.address, tokenURI);
+        tx = await nft.createNft(user1.address, tokenURI);
         await tx.wait();
 
         // check if the user has 1 minted item
@@ -34,6 +34,6 @@ describe('Award an Item', () => {
 
     it('should emit an event when an item is awarded', async () => {
         // emit an event when an item is awarded
-        await expect(nft.awardItem(user1.address, tokenURI)).to.emit(nft, 'Transfer').withArgs(ethers.ZeroAddress, user1.address, 0);
+        await expect(nft.createNft(user1.address, tokenURI)).to.emit(nft, 'Transfer').withArgs(ethers.ZeroAddress, user1.address, 0);
     });
 });
