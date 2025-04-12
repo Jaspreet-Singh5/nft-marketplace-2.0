@@ -1,46 +1,43 @@
 const express = require('express');
 const cors = require('cors');
-const { PinataSDK } = require('pinata');
-const fs = require('fs');
-const { Blob } = require('buffer');
+const session = require('express-session');
+const mongoose = require('mongoose');
+const nftRoutes = require('./routes/nft');
 const path = require('path');
 require('dotenv').config();
+
 const app = express();
-const port = 3000;
-const pinata = new PinataSDK({
-    pinataJwt: process.env.PINATA_JWT,
-    pinataGateway: process.env.GATEWAY_URL,
-});
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-async function upload() {
-    try {
-        // Use path.join to get the correct file path
-        const filePath = path.join(__dirname, 'hello-world.txt');
-        const blob = new Blob([fs.readFileSync(filePath)], { type: 'text/plain' });
-        const upload = await pinata.upload.public.file(blob);
-        console.log(upload);
-    } catch (error) {
-        console.log(error);
+app.use(
+    session({
+        secret: process.env.JWT_SECRET,
+        resave: false,
+        saveUninitialized: false,
+        cookie: { secure: process.env.NODE_ENV === 'production', maxAge: 24 * 60 * 60 * 1000 }, // 24 hours
+    })
+);
+
     }
 }
 
 app.post('/nft', async (req, res) => {
     try {
         const { name, description, image } = req.body;
-
+// Routes
         const imagePinResponse = await upload();
-        console.log(imagePinResponse);
+app.use('/api/nft', nftRoutes);
 
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to mint NFT' });
-    }
+// Basic route
+app.get('/', (req, res) => {
+    res.send('NFT Minting API is running');
 });
 
-app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+// Start the server
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
