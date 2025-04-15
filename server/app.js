@@ -3,7 +3,8 @@ const cors = require('cors');
 const session = require('express-session');
 const mongoose = require('mongoose');
 const nftRoutes = require('./routes/nft');
-const path = require('path');
+const authRoutes = require('./routes/auth');
+
 require('dotenv').config();
 
 const app = express();
@@ -22,14 +23,16 @@ app.use(
     })
 );
 
-    }
-}
+// Connect to MongoDB
+mongoose
+    .connect(process.env.MONGODB_URI)
+    .then(() => console.log('Connected to MongoDB'))
+    .catch(err => {
+        console.error('MongoDB connection error:', err);
+    });
 
-app.post('/nft', async (req, res) => {
-    try {
-        const { name, description, image } = req.body;
 // Routes
-        const imagePinResponse = await upload();
+app.use('/api/auth', authRoutes);
 app.use('/api/nft', nftRoutes);
 
 // Basic route
