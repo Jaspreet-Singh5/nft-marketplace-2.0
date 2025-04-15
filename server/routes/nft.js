@@ -131,7 +131,7 @@ router.post('/mint', auth, async (req, res) => {
 
         try {
             // Mint NFT on blockchain
-            const mintResult = await contractService.createNft(ownerAddress, metadataResult.IpfsHash);
+            const mintResult = await contractService.mintNFT(ownerAddress, metadataResult.IpfsHash);
 
             // Update NFT with blockchain data
             nft.tokenId = mintResult.tokenId;
@@ -272,13 +272,23 @@ router.get('/by-wallet/:address', auth, async (req, res) => {
     }
 });
 
-// Get single NFT details
+// Get single NFT details with blockchain verification
 router.get('/:id', auth, async (req, res) => {
     try {
         const nft = await NFT.findById(req.params.id);
 
         if (!nft) {
             return res.status(404).json({ message: 'NFT not found' });
+        }
+
+        // If NFT has been minted, verify on-chain data
+        let blockchainData = null;
+        if (nft.status === 'minted' && nft.tokenId !== undefined) {
+            try {
+                blockchainData = await contractService.getNFTData(nft.tokenId);
+            } catch (error) {
+                console.error('Could not verify blockchain data:', error);
+            }
         }
 
         res.json({
