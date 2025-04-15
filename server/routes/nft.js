@@ -6,6 +6,7 @@ const fs = require('fs');
 const auth = require('../middleware/auth');
 const NFT = require('../models/NFT');
 const pinataSDK = require('@pinata/sdk');
+const contractService = require('../services/contractService');
 
 const router = express.Router();
 
@@ -85,7 +86,7 @@ router.post('/upload', auth, upload.single('image'), async (req, res) => {
     }
 });
 
-// Mint NFT (create metadata and store in DB)
+// Mint NFT on blockchain
 router.post('/mint', auth, async (req, res) => {
     try {
         const { name, description, ipfsHash, ownerAddress } = req.body;
@@ -113,7 +114,7 @@ router.post('/mint', auth, async (req, res) => {
             pinataMetadata: { name: `metadata-${name}` },
         });
 
-        // Save NFT info to database
+        // Save NFT info to database initially as pending
         const nft = new NFT({
             name,
             description,
@@ -121,22 +122,62 @@ router.post('/mint', auth, async (req, res) => {
             metadataHash: metadataResult.IpfsHash,
             ownerAddress,
             userId: req.user._id,
+            status: 'pending',
+            contractAddress: process.env.NFT_CONTRACT_ADDRESS,
+            network: process.env.ETHEREUM_NETWORK || 'ethereum',
         });
 
         await nft.save();
 
-        res.status(201).json({
-            success: true,
-            nft: {
-                id: nft._id,
-                name: nft.name,
-                description: nft.description,
-                ipfsHash: nft.ipfsHash,
-                metadataHash: nft.metadataHash,
-                ownerAddress: nft.ownerAddress,
-                metadata: metadata,
-            },
-        });
+        try {
+            // Mint NFT on blockchain
+            const mintResult = await contractService.createNft(ownerAddress, metadataResult.IpfsHash);
+
+            // Update NFT with blockchain data
+            nft.tokenId = mintResult.tokenId;
+            nft.transactionHash = mintResult.transactionHash;
+            nft.blockNumber = mintResult.blockNumber;
+            nft.status = 'minted';
+            nft.mintedAt = new Date();
+
+            await nft.save();
+
+            res.status(201).json({
+                success: true,
+                nft: {
+                    id: nft._id,
+                    name: nft.name,
+                    description: nft.description,
+                    ipfsHash: nft.ipfsHash,
+                    metadataHash: nft.metadataHash,
+                    ownerAddress: nft.ownerAddress,
+                    tokenId: nft.tokenId,
+                    transactionHash: nft.transactionHash,
+                    blockNumber: nft.blockNumber,
+                    status: nft.status,
+                    contractAddress: nft.contractAddress,
+                    network: nft.network,
+                    metadata: metadata,
+                },
+            });
+        } catch (error) {
+            // In case of blockchain error, mark as failed but keep the NFT record
+            nft.status = 'failed';
+            await nft.save();
+
+            console.error('Blockchain minting error:', error);
+            res.status(500).json({
+                message: 'NFT created on IPFS but blockchain minting failed',
+                error: error.message,
+                nft: {
+                    id: nft._id,
+                    name: nft.name,
+                    ipfsHash: nft.ipfsHash,
+                    metadataHash: nft.metadataHash,
+                    status: 'failed',
+                },
+            });
+        }
     } catch (error) {
         console.error('Error minting NFT:', error);
         res.status(500).json({ message: 'Failed to mint NFT', error: error.message });
@@ -157,6 +198,9 @@ router.get('/list', auth, async (req, res) => {
                 ipfsHash: nft.ipfsHash,
                 metadataHash: nft.metadataHash,
                 ownerAddress: nft.ownerAddress,
+                tokenId: nft.tokenId,
+                transactionHash: nft.transactionHash,
+                status: nft.status,
                 createdAt: nft.createdAt,
                 imageUrl: `https://gateway.pinata.cloud/ipfs/${nft.ipfsHash}`,
                 metadataUrl: `https://gateway.pinata.cloud/ipfs/${nft.metadataHash}`,
@@ -181,6 +225,9 @@ router.get('/my-nfts', auth, async (req, res) => {
                 ipfsHash: nft.ipfsHash,
                 metadataHash: nft.metadataHash,
                 ownerAddress: nft.ownerAddress,
+                tokenId: nft.tokenId,
+                transactionHash: nft.transactionHash,
+                status: nft.status,
                 createdAt: nft.createdAt,
                 imageUrl: `https://gateway.pinata.cloud/ipfs/${nft.ipfsHash}`,
                 metadataUrl: `https://gateway.pinata.cloud/ipfs/${nft.metadataHash}`,
@@ -212,6 +259,9 @@ router.get('/by-wallet/:address', auth, async (req, res) => {
                 ipfsHash: nft.ipfsHash,
                 metadataHash: nft.metadataHash,
                 ownerAddress: nft.ownerAddress,
+                tokenId: nft.tokenId,
+                transactionHash: nft.transactionHash,
+                status: nft.status,
                 createdAt: nft.createdAt,
                 imageUrl: `https://gateway.pinata.cloud/ipfs/${nft.ipfsHash}`,
                 metadataUrl: `https://gateway.pinata.cloud/ipfs/${nft.metadataHash}`,
@@ -238,9 +288,17 @@ router.get('/:id', auth, async (req, res) => {
             ipfsHash: nft.ipfsHash,
             metadataHash: nft.metadataHash,
             ownerAddress: nft.ownerAddress,
+            tokenId: nft.tokenId,
+            transactionHash: nft.transactionHash,
+            blockNumber: nft.blockNumber,
+            status: nft.status,
             createdAt: nft.createdAt,
+            contractAddress: nft.contractAddress,
+            network: nft.network,
             imageUrl: `https://gateway.pinata.cloud/ipfs/${nft.ipfsHash}`,
             metadataUrl: `https://gateway.pinata.cloud/ipfs/${nft.metadataHash}`,
+            blockchainVerified: blockchainData !== null,
+            blockchainData,
         });
     } catch (error) {
         res.status(500).json({ message: 'Failed to fetch NFT', error: error.message });
