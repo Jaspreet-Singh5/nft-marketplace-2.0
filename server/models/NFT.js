@@ -27,6 +27,31 @@ const nftSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
     },
+    // New blockchain related fields
+    tokenId: {
+        type: Number,
+    },
+    transactionHash: {
+        type: String,
+    },
+    blockNumber: {
+        type: Number,
+    },
+    network: {
+        type: String,
+        default: 'ethereum',
+    },
+    contractAddress: {
+        type: String,
+    },
+    mintedAt: {
+        type: Date,
+    },
+    status: {
+        type: String,
+        enum: ['pending', 'minted', 'failed'],
+        default: 'pending',
+    },
     createdAt: {
         type: Date,
         default: Date.now,
