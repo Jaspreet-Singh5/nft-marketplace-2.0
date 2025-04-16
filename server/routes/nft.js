@@ -16,7 +16,12 @@ const pinata = new PinataSDK({
 const router = express.Router();
 
 router.post('/upload', upload.single('image'), async (req, res) => {
-    const upload = await pinata.upload.public.file(new File([req.file.buffer], req.file.originalname));
+    const {
+        buffer,
+        originalname
+    } = req.file;
+    
+    const upload = await pinata.upload.public.file(new File([buffer], originalname));
 });
 
 module.exports = router;
