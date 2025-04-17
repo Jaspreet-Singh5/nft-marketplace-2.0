@@ -6,6 +6,7 @@ const fs = require('fs');
 const auth = require('../middleware/auth');
 const upload = multer();
 const { PinataSDK } = require('pinata');
+const { NFT_ABI } = require('../abis/NFT');
 require('dotenv').config();
 
 const pinata = new PinataSDK({
@@ -14,6 +15,9 @@ const pinata = new PinataSDK({
 });
 
 const router = express.Router();
+
+const provider = new ethers.JsonRpcProvider(process.env.ETHEREUM_RPC_URL);
+const NFT = new ethers.Contract(process.env.NFT_CONTRACT_ADDRESS, NFT_ABI, provider);
 
 router.post('/upload', upload.single('image'), async (req, res) => {
     const { buffer } = req.file;
