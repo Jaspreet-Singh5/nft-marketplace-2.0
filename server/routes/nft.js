@@ -18,10 +18,17 @@ const router = express.Router();
 router.post('/upload', upload.single('image'), async (req, res) => {
     const {
         buffer,
-        originalname
     } = req.file;
+
+    const {
+        name,
+        description,
+    } = req.body;
     
-    const upload = await pinata.upload.public.file(new File([buffer], originalname));
+    const upload = await pinata.upload.public.file(new File([buffer], name)).keyvalues({
+        name,
+        description,
+    });
 });
 
 module.exports = router;
