@@ -23,6 +23,11 @@ app.use(
     })
 );
 
+mongoose
+    .connect(process.env.MONGODB_URI)
+    .then(() => console.log('connected successfully'))
+    .catch((err) => console.error(err));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/nft', nftRoutes);
