@@ -73,15 +73,25 @@ router.get('/list', async (req, res) => {
     let totalSupply = await nft.totalSupply();
     totalSupply = totalSupply.toString();
     
+    // create an array to store all tokenURIs 
+    const tokenURIs = [];
     // Iterate through all NFTs and fetch their URIs
     for (i = 0; i < totalSupply; i++) {
         let tokenId = await nft.tokenByIndex(i);
         tokenId = tokenId.toString();
         
         const tokenURI = await nft.tokenURI(tokenId);
+        // add tokenURIs to the 
+        tokenURIs.push(tokenURI);
     }
 
-    res.status(200);
+    // fetch data for all nfts
+    const nftList = await Promise.all([
+        ...tokenURIs.map(async tokenURI => fetch(tokenURI).then(async res => await res.json()))
+    ]);
+    
+    // return nfts list
+    res.status(200).json(nftList);
 });
 
 module.exports = router;
