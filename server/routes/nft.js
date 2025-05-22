@@ -68,7 +68,7 @@ router.post('/upload', upload.single('image'), async (req, res) => {
  * @route GET /list
  * @returns {Array} List of NFT token URIs
  */
-router.get('/list', async (req, res) => {
+router.get('/list', auth, async (req, res) => {
     // Get total number of NFTs minted
     let totalSupply = await nft.totalSupply();
     totalSupply = totalSupply.toString();
