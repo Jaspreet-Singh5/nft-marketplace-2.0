@@ -29,12 +29,18 @@ const signer = new ethers.Wallet(process.env.MINTER_PRIVATE_KEY, provider);
  * Handles image upload, IPFS storage, and NFT minting
  * @route POST /upload
  * @param {Object} req.file - Uploaded image file
- * @param {Object} req.body - Contains name, description, and user address
+ * @param {Object} req.body - Contains name, description, and walletAddress address
  * @returns {Object} Transaction hash of the minting operation
  */
 router.post('/upload', upload.single('image'), async (req, res) => {
     const { buffer } = req.file;
-    const { name, description, user } = req.body;
+    const { name, description, walletAddress } = req.body;
+
+    // Validate wallet address before minting (must be a valid Ethereum address)
+    if (!ethers.isAddress(walletAddress)) {
+        res.status(422).send('Invalid wallet address');
+        return;
+    }
 
     // Upload image to IPFS using Pinata
     const { cid: imageCID } = await pinata.upload.public.file(new File([buffer], name)).keyvalues({
@@ -48,17 +54,19 @@ router.post('/upload', upload.single('image'), async (req, res) => {
         description,
         image: `https://${process.env.PINATA_GATEWAY_URL}/ipfs/${imageCID}`,
     };
-    
+
     // Upload metadata to IPFS
     const { cid: metadataCID } = await pinata.upload.public.json(metadata);
 
-    // Construct tokenURI and mint NFT
+    // Construct tokenURI
     const tokenURI = `https://${process.env.PINATA_GATEWAY_URL}/ipfs/${metadataCID}`;
-    const transaction = await nft.connect(signer).createNft(user, tokenURI);
+
+    //  mint NFT
+    const transaction = await nft.connect(signer).createNft(walletAddress, tokenURI);
     const result = await transaction.wait();
-    
+
     res.status(200).json({
-        hash: result?.hash
+        hash: result?.hash,
     });
 });
 
