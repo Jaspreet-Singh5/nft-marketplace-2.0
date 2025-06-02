@@ -13,7 +13,13 @@ export const LoginWithEmail = () => {
             <TextField id="outlined-basic" label="Email" variant="outlined" onChange={e => setEmail(e.target.value)} className="w-100" />
 
             <Button variant="contained" endIcon={<SendIcon />} onClick={e => sendCode({ email })} className="w-100">
-                Send Code
+                Send OTP
+            </Button>
+
+            <TextField id="outlined-basic" label="Enter OTP" variant="outlined" onChange={e => setCode(e.target.value)} className="w-100" />
+
+            <Button variant="contained" onClick={e => loginWithCode({ code })} className="w-100">
+                Login
             </Button>
         </div>
     );
