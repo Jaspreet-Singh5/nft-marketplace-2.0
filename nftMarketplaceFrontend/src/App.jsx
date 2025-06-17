@@ -2,6 +2,7 @@ import './App.css';
 import { usePrivy } from '@privy-io/react-auth';
 import { LoginWithEmail } from './LoginWithEmail';
 import { CircularProgress } from '@mui/material';
+import NFTForm from './NFTForm';
 
 function App() {
     const { ready, authenticated, user } = usePrivy();
@@ -19,7 +20,7 @@ function App() {
 			</>
 		);
 	} else {
-		return <p>User {user?.id} is logged in.</p>;
+		return <NFTForm />;
 	}
 }
 
