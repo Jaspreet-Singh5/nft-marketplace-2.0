@@ -18,6 +18,7 @@ export default function NFTForm() {
     const [walletAddress, setWalletAddress] = useState('');
     const [name, setName] = useState();
     const [description, setDescription] = useState();
+    const [image, setImage] = useState();
 
     return (
         <div className="h-100 m-2 flex justify-center items-center flex-col gap-2">
@@ -41,7 +42,7 @@ export default function NFTForm() {
 
             <Button component="label" role={undefined} variant="contained" tabIndex={-1} startIcon={<CloudUploadIcon />} className="w-100">
                 Upload files
-                <VisuallyHiddenInput type="file" onChange={event => console.log(event.target.files)} accept="image/*" />
+                <VisuallyHiddenInput type="file" onChange={event => setImage(event.target.files)} accept="image/*" />
             </Button>
 
             <Button variant="contained" className="w-100">
